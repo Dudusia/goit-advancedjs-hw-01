@@ -1,48 +1,42 @@
+import path, { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
-import { glob } from 'glob';
-import injectHTML from 'vite-plugin-html-inject';
-import FullReload from 'vite-plugin-full-reload';
-import SortCss from 'postcss-sort-media-queries';
 
-export default defineConfig(({ command }) => {
-  return {
-    define: {
-      [command === 'serve' ? 'global' : '_global']: {},
-    },
-    root: 'src',
-    build: {
-      sourcemap: true,
-      rollupOptions: {
-        input: glob.sync('./src/*.html'),
-        output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              return 'vendor';
-            }
-          },
-          entryFileNames: chunkInfo => {
-            if (chunkInfo.name === 'commonHelpers') {
-              return 'commonHelpers.js';
-            }
-            return '[name].js';
-          },
-          assetFileNames: assetInfo => {
-            if (assetInfo.name && assetInfo.name.endsWith('.html')) {
-              return '[name].[ext]';
-            }
-            return 'assets/[name]-[hash][extname]';
-          },
+const __dirname = dirname(fileURLToPath(import.meta.url)) + '/src';
+
+export default defineConfig(({ command, mode }) => ({
+  base: mode === 'production' ? './' : '/',
+  define: {
+    global: {},
+  },
+  root: __dirname,
+  build: {
+    outDir: resolve(__dirname, '../dist'),
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        '1-gallery': resolve(__dirname, '1-gallery.html'),
+        '2-form': resolve(__dirname, '2-form.html'),
+      },
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        },
+        entryFileNames: chunkInfo => {
+          if (chunkInfo.name === 'commonHelpers') {
+            return 'commonHelpers.js';
+          }
+          return '[name].js';
+        },
+        assetFileNames: assetInfo => {
+          if (assetInfo.name && assetInfo.name.endsWith('.html')) {
+            return '[name].[ext]';
+          }
+          return 'assets/[name]-[hash][extname]';
         },
       },
-      outDir: '../dist',
-      emptyOutDir: true,
     },
-    plugins: [
-      injectHTML(),
-      FullReload(['./src/**/**.html']),
-      SortCss({
-        sort: 'mobile-first',
-      }),
-    ],
-  };
-});
+  },
+}));
